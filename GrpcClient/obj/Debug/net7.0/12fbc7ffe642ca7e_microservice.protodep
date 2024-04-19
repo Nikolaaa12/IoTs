@@ -1,0 +1,3 @@
+obj\Debug\net7.0\Protos/Microservice.cs \
+obj\Debug\net7.0\Protos/MicroserviceGrpc.cs: C:/Users/Korisnik/.nuget/packages/grpc.tools/2.62.0/build/native/include/google/protobuf/timestamp.proto\
+ Protos/microservice.proto

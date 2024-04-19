@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcServer";
+
+package microservice;
+
+import "google/protobuf/timestamp.proto";
+
+service ElectricityConsumption {
+   rpc GetElectricityConsumptionValueById(ElectricityConsumptionId) returns (ValueMessage);
+   rpc AddElectricityConsumptionValue(ElectricityConsumptionValue) returns (ValueMessage);
+   rpc DeleteElectricityConsumptionById(ElectricityConsumptionId) returns (ValueMessage);
+   rpc UpdateElectricityConsumptionById(ElectricityConsumptionValue) returns (ValueMessage);
+   rpc ElectricityConsumptionAggregation(ElectricityConsumptionAggregationRequest) returns (AggregationValue);
+}
+
+message ElectricityConsumptionId {
+	string _id = 1;
+}
+
+message ElectricityConsumptionValue {
+    string _id = 1;
+    string Date = 2;
+    int32 Consumption = 3;
+    int32 Production = 4;
+    int32 Nuclear = 5;
+    int32 Wind = 6;
+    int32 Hydroelectric = 7;
+    int32 OilAndGas = 8;
+    int32 Coal = 9;
+    int32 Solar = 10;
+    int32 Biomass = 11;
+}
+
+message ValueMessage {
+	string id = 1;
+	string message = 2;
+	ElectricityConsumptionValue electricityconsumptionvalue = 3;
+}
+
+message ElectricityConsumptionAggregationRequest {
+  string start_timestamp = 1;
+  string end_timestamp = 2;
+  string operation = 3;
+  string field_name = 4;
+}
+
+message AggregationValue{
+    double result = 1;
+}

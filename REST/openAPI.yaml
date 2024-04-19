@@ -1,0 +1,201 @@
+openapi: 3.0.0
+info:
+  title: Electricity Consumption API
+  version: 1.0.0
+  description: API for managing electricity consumption data
+paths:
+  /getElectricityConsumption/{id}:
+    get:
+      summary: Get electricity consumption value by ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the electricity consumption value to retrieve
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElectricityConsumptionValue'
+        '404':
+          description: Electricity consumption with the specified ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValueMessage'
+        '500':
+          description: Internal server error
+  /addElectricityConsumption:
+    post:
+      summary: Add electricity consumption value
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElectricityConsumptionValue'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValueMessage'
+        '500':
+          description: Internal server error
+  /deleteElectricityConsumption/{id}:
+    delete:
+      summary: Delete electricity consumption by ID
+      description: Deletes electricity consumption data with the specified ID.
+      parameters:
+        - in: path
+          name: id
+          description: ID of the electricity consumption to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValueMessage'
+        '404':
+          description: Electricity consumption with the specified ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValueMessage'
+        '500':
+          description: Internal Server Error
+  /updateElectricityConsumption:
+    put:
+      summary: Update electricity consumption value by ID
+      description: Update electricity consumption data with the specified ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateElectricityConsumptionRequest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValueMessage'
+        '404':
+          description: Electricity consumption with the specified ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValueMessage'
+        '500':
+          description: Internal Server Error
+  /aggregateElectricityConsumption:
+    get:
+      summary: Perform electricity consumption aggregation
+      parameters:
+        - in: query
+          name: StartTimestamp
+          schema:
+            type: string
+          required: true
+          description: Start timestamp for aggregation
+        - in: query
+          name: EndTimestamp
+          schema:
+            type: string
+          required: true
+          description: End timestamp for aggregation
+        - in: query
+          name: Operation
+          schema:
+            type: string
+          required: true
+          description: Aggregation operation (min, max, avg, sum)
+        - in: query
+          name: FieldName
+          schema:
+            type: string
+          required: true
+          description: Name of the field to aggregate
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregationValue'
+        '400':
+          description: Invalid argument for aggregation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValueMessage'
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    ElectricityConsumptionValue:
+      type: object
+      properties:
+        Consumption:
+          type: integer
+        Production:
+          type: integer
+        Nuclear:
+          type: integer
+        Wind:
+          type: integer
+        Hydroelectric:
+          type: integer
+        OilAndGas:
+          type: integer
+        Coal:
+          type: integer
+        Solar:
+          type: integer
+        Biomass:
+          type: integer
+    ValueMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+    UpdateElectricityConsumptionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        Consumption:
+          type: integer
+        Production:
+          type: integer
+        Nuclear:
+          type: integer
+        Wind:
+          type: integer
+        Hydroelectric:
+          type: integer
+        OilAndGas:
+          type: integer
+        Coal:
+          type: integer
+        Solar:
+          type: integer
+        Biomass:
+          type: integer
+    AggregationValue:
+      type: object
+      properties:
+        Result: 
+          type: number

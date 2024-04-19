@@ -1,0 +1,40 @@
+version: '3'
+services:
+  grpc-server:
+    build:
+      context: ./GrpcServer
+      dockerfile: Dockerfile
+    container_name: grpc-server
+    ports:
+      - "5240:5240" 
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  nodejs-rest:
+    build:
+      context: ./REST
+      dockerfile: Dockerfile
+    container_name: rest
+    ports:
+      - "3001:3000" 
+    depends_on:
+      - grpc-server
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
