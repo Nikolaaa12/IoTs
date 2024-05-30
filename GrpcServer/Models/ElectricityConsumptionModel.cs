@@ -12,8 +12,8 @@ namespace GrpcServer.Models
         public int Production { get; set; }
         public int Nuclear { get; set; }
         public int Wind { get; set; }
-        public int Hydroelectric { get; set; }
-            
+        public int Hydroelectric { get; set; } 
+        
         [BsonElement("Oil and Gas")]
         public int OilAndGas { get; set; }
         public int Coal { get; set; }
