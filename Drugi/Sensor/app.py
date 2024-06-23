@@ -60,7 +60,7 @@ def publish_data():
             "Solar": document["Solar"],
             "Biomass": document["Biomass"]
         }
-        message = json.dumps({"data": transformed_document})
+        message = json.dumps(transformed_document)
         client.publish(MQTT_TOPIC, message)
     return "Data published to MQTT topic."
 

@@ -1,0 +1,26 @@
+instance:
+  id: ekp_instance
+  container_name: ekuiper
+  image: ifedge/ekuiper
+
+sources:
+  - type: mqtt
+    id: mqtt_source
+    broker: tcp://localhost:1883
+    topic: dbData
+    consumer_group: ekp_group
+
+sinks:
+  - type: mqtt
+    id: mqtt_sink
+    broker: tcp://localhost:1883
+    topic: filteredData
+    format: json
+
+rules:
+  - id: filter_rule
+    sql: |
+      SELECT *
+      INTO mqtt_sink
+      FROM mqtt_source
+      WHERE Production < Consumption

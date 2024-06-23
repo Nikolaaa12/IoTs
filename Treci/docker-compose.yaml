@@ -1,0 +1,44 @@
+version: '3'
+
+networks:
+  filter-network:
+    driver: bridge
+
+services:
+  nodejs:
+    build:
+      context: ./Filter
+    image: node-js
+    container_name: nodejs
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - filter-network
+    environment:
+      PORT: 3000  
+      MONGODB_URL: mongodb://mongodb:27017/Electricity
+    depends_on:
+      - mongodb
+      - nats
+
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    restart: unless-stopped
+    networks:
+      - filter-network
+    environment:
+      MONGO_INITDB_DATABASE: Electricity
+    volumes:
+      - mongodb_data:/data/db
+
+  nats:
+    image: nats
+    container_name: nats
+    restart: unless-stopped
+    networks:
+      - filter-network
+
+volumes:
+  mongodb_data:

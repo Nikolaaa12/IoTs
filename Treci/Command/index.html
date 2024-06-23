@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f0f0f8;
+            color: #333;
+        }
+        .container {
+            width: calc(100% - 20px);
+            margin: 0 auto;
+            background: #fff;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+            white-space: nowrap;
+            font-size: 0.8em; /* Reduced font size */
+            border-radius: 4px; /* Rounded corners */
+        }
+        th {
+            background-color: #f4f4f4;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+        .square {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Event Display</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>DateTime</th>
+                    <th>Consumption</th>
+                    <th>Production</th>
+                    <th>Nuclear</th>
+                    <th>Wind</th>
+                    <th>Hydroelectric</th>
+                    <th>Oil & Gas</th>
+                    <th>Coal</th>
+                    <th>Solar</th>
+                    <th>Biomass</th>
+                </tr>
+            </thead>
+            <tbody id="event-table-body">
+                <!-- Rows with data will be added dynamically here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const socket = new WebSocket('ws://localhost:8080');
+
+        socket.onopen = function() {
+            console.log('WebSocket connection established.');
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        socket.onmessage = function(event) {
+            const eventData = JSON.parse(event.data);
+            console.log('Received data:', eventData);
+
+            if (eventData.Production > eventData.Consumption) {
+                const tableBody = document.getElementById('event-table-body');
+
+                const row = document.createElement('tr');
+
+                // Create cells and add data to the row
+                row.innerHTML = `
+                    <td>${eventData.DateTime}</td>
+                    <td>${eventData.Consumption}</td>
+                    <td>${eventData.Production}</td>
+                    <td>${eventData.Nuclear}</td>
+                    <td>${eventData.Wind}</td>
+                    <td>${eventData.Hydroelectric}</td>
+                    <td>${eventData['Oil & Gas']}</td>
+                    <td>${eventData.Coal}</td>
+                    <td>${eventData.Solar}</td>
+                    <td>${eventData.Biomass}</td>
+                `;
+
+                tableBody.prepend(row); // Add new row to the beginning of the table
+            }
+        };
+    </script>
+</body>
+</html>
