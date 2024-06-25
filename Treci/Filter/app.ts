@@ -24,10 +24,8 @@ async function loadDataFromFile() {
             averages[field] = sum / documents.length;
         });
 
-        // Subscribe to NATS first
         await subscribeToNATS('average_data');
 
-        // Now send the averages to NATS
         sendToNATS('average_data', averages).catch(error => {
             console.error('Došlo je do greške prilikom slanja poruke na NATS server:', error);
         });

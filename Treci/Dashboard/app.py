@@ -5,8 +5,7 @@ from nats.aio.client import Client as NATS
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-# Update the InfluxDB host IP address here
-influx_host = "172.29.0.6"  # Update to match the IP address of InfluxDB container
+influx_host = "172.29.0.6"  
 influx_port = 8086
 influx_token = "9yldtW_yJrRsTBCKBax1xQLHJk5E-4vDcZh-yjoRNG4o0EtEt_AeIl5wf2mONzjWBk448fuYkHC7Qnp71Kdjig=="
 influx_bucket = "Electricity"

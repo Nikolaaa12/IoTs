@@ -12,6 +12,7 @@ const mqttBrokerUrl = 'mqtt://my-custom-mosquitto';
 const mqttTopic = 'dbData'; 
 
 const mqttClient = mqtt.connect(mqttBrokerUrl);
+let messageQueue = []; 
 
 mqttClient.on('connect', () => {
     console.log('Connected to MQTT broker');
@@ -37,18 +38,29 @@ mqttClient.on('message', (topic, message) => {
 
         const parsedData = JSON.parse(standardPayload);
 
-        function emitMessage(data) {
-            setTimeout(() => {
-                broadcastEvent(data);
-            }, 1000); 
-        }
+        messageQueue.push(parsedData);
 
-        emitMessage(parsedData);
+        if (!sendingInterval) {
+            startSendingMessages();
+        }
     } catch (error) {
         console.error('Error parsing MQTT message:', error);
     }
 });
 
+let sendingInterval; // Interval handler
+
+function startSendingMessages() {
+    sendingInterval = setInterval(() => {
+        if (messageQueue.length > 0) {
+            const eventData = messageQueue.shift(); 
+            broadcastEvent(eventData);
+        } else {
+            clearInterval(sendingInterval); 
+            sendingInterval = null;
+        }
+    }, 500); 
+}
 
 function broadcastEvent(eventData) {
     const eventMessage = JSON.stringify(eventData);
@@ -61,21 +73,6 @@ function broadcastEvent(eventData) {
         }
     });
 }
-
-setTimeout(() => {
-    broadcastEvent({
-        DateTime: new Date().toISOString(),
-        Consumption: 100,
-        Production: 120,
-        Nuclear: 30,
-        Wind: 25,
-        Hydroelectric: 15,
-        'Oil & Gas': 10,
-        Coal: 20,
-        Solar: 10,
-        Biomass: 5
-    });
-}, 5000);
 
 wss.on('connection', (ws) => {
     console.log('WebSocket client connected');

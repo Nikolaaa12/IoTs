@@ -62,7 +62,7 @@ services:
       - my-network
     depends_on:
       - my-custom-mosquitto
-      - nodejs-app2  # Update dependency to use your custom service
+      - nodejs-app2  
 
 networks:
   my-network:
