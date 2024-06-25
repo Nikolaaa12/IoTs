@@ -5,9 +5,10 @@ from nats.aio.client import Client as NATS
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-influx_host = "localhost"
-influx_port = 8087
-influx_token = "YS2Vqi_zofhTvYF5fmec6b9GkIPuEecVa4THGCpDN0U0V-f6s0GT0L0Nfu3uCMUwf_q-R4-qRkV0SRtnUznLWA=="
+# Update the InfluxDB host IP address here
+influx_host = "172.29.0.6"  # Update to match the IP address of InfluxDB container
+influx_port = 8086
+influx_token = "9yldtW_yJrRsTBCKBax1xQLHJk5E-4vDcZh-yjoRNG4o0EtEt_AeIl5wf2mONzjWBk448fuYkHC7Qnp71Kdjig=="
 influx_bucket = "Electricity"
 influx_org = "IoT_project"
 
@@ -15,37 +16,33 @@ async def subscribe_to_nats_and_send_to_influxdb():
 
     nc = NATS()
 
-    await nc.connect(servers=["nats://localhost:4222"])
-
-    client = InfluxDBClient(url=f"http://{influx_host}:{influx_port}", token=influx_token)
-
-    write_api = client.write_api(write_options=SYNCHRONOUS)
-
-    async def message_handler(msg):
-
-        data = json.loads(msg.data.decode())
-        print(f"Primljena poruka na temi {msg.subject}: {data}")
-
-        point = Point("electricity").tag("location", "home").time(datetime.utcnow())
-
-        for field_name, field_value in data.items():
-            point.field(field_name, field_value)
-
-        write_api.write(bucket=influx_bucket, org=influx_org, record=point)
-
     try:
+        await nc.connect(servers=["nats://nats:4222"])
+
+        client = InfluxDBClient(url=f"http://{influx_host}:{influx_port}", token=influx_token)
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+
+        async def message_handler(msg):
+            data = json.loads(msg.data.decode())
+            print(f"Received message on subject {msg.subject}: {data}")
+
+            point = Point("electricity").tag("location", "home").time(datetime.utcnow())
+
+            for field_name, field_value in data.items():
+                point.field(field_name, field_value)
+
+            write_api.write(bucket=influx_bucket, org=influx_org, record=point)
 
         await nc.subscribe("average_data", cb=message_handler)
-        print(f"Pretplaćeni ste na temu 'average_data' i čekate poruke...")
+        print("Subscribed to 'average_data' topic and waiting for messages...")
 
         while True:
             await asyncio.sleep(1)
 
     except Exception as e:
-        print(f"Greška prilikom pretplate na temu: {e}")
+        print(f"Error: {e}")
 
     finally:
-
         await nc.close()
         client.close()
 

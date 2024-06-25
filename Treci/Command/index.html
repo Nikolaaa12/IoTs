@@ -74,13 +74,13 @@
                 </tr>
             </thead>
             <tbody id="event-table-body">
-                <!-- Rows with data will be added dynamically here -->
+                <!-- Rows will be dynamically added here -->
             </tbody>
         </table>
     </div>
 
     <script>
-        const socket = new WebSocket('ws://localhost:8080');
+        const socket = new WebSocket('ws://localhost:8080'); 
 
         socket.onopen = function() {
             console.log('WebSocket connection established.');
@@ -91,29 +91,35 @@
         };
 
         socket.onmessage = function(event) {
-            const eventData = JSON.parse(event.data);
-            console.log('Received data:', eventData);
+            console.log('Received message from server:', event.data);
+            try {
+                const eventData = JSON.parse(event.data);
+                console.log('Parsed event data:', eventData);
 
-            if (eventData.Production > eventData.Consumption) {
-                const tableBody = document.getElementById('event-table-body');
+                if (eventData && eventData.Production > eventData.Consumption) {
+                    const tableBody = document.getElementById('event-table-body');
 
-                const row = document.createElement('tr');
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${eventData.DateTime}</td>
+                        <td>${eventData.Consumption}</td>
+                        <td>${eventData.Production}</td>
+                        <td>${eventData.Nuclear}</td>
+                        <td>${eventData.Wind}</td>
+                        <td>${eventData.Hydroelectric}</td>
+                        <td>${eventData['Oil_and_Gas']}</td> <!-- Check if this matches the property name -->
+                        <td>${eventData.Coal}</td>
+                        <td>${eventData.Solar}</td>
+                        <td>${eventData.Biomass}</td>
+                    `;
 
-                // Create cells and add data to the row
-                row.innerHTML = `
-                    <td>${eventData.DateTime}</td>
-                    <td>${eventData.Consumption}</td>
-                    <td>${eventData.Production}</td>
-                    <td>${eventData.Nuclear}</td>
-                    <td>${eventData.Wind}</td>
-                    <td>${eventData.Hydroelectric}</td>
-                    <td>${eventData['Oil & Gas']}</td>
-                    <td>${eventData.Coal}</td>
-                    <td>${eventData.Solar}</td>
-                    <td>${eventData.Biomass}</td>
-                `;
-
-                tableBody.prepend(row); // Add new row to the beginning of the table
+                    tableBody.prepend(row);
+                } else {
+                    console.warn('Invalid data format received:', event.data);
+                }
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                console.log('Data received:', event.data); 
             }
         };
     </script>

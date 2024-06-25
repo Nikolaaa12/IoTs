@@ -21,37 +21,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const path_1 = __importDefault(require("path"));
-const mongodb_1 = require("mongodb");
+const promises_1 = __importDefault(require("fs/promises"));
 const nats_1 = require("nats");
 const app = (0, express_1.default)();
-const uri = 'mongodb://127.0.0.1:27017/Electricity';
-let collection;
-let averages = {};
-function connectToDatabase() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const options = {};
-        const client = yield mongodb_1.MongoClient.connect(uri, options);
-        const db = client.db('Electricity');
-        collection = db.collection('electricity_consumption');
-        console.log('Uspešno konektovan sa bazom.');
-    });
-}
-connectToDatabase().catch(error => {
-    console.error('Došlo je do greške prilikom konektovanja sa bazom:', error);
-});
 const staticPath = path_1.default.join(__dirname, 'public');
-app.use(express_1.default.static(staticPath));
-const fields = ['Consumption', 'Production', 'Nuclear', 'Wind', 'Hydroelectric', 'Oil and Gas', 'Coal', 'Solar', 'Biomass'];
-app.get('/api/documents', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { startDate, endDate } = req.query;
-        if (typeof startDate === 'string' && typeof endDate === 'string') {
-            const startDateObj = new Date(startDate);
-            const endDateObj = new Date(endDate);
-            const documents = yield collection.find({
-                DateTime: { $gte: startDateObj, $lte: endDateObj }
-            }).toArray();
-            console.log(documents);
+const electricityDataFilePath = path_1.default.join(staticPath, 'Electricity.electricity_consumption.json');
+let averages = {};
+function loadDataFromFile() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const jsonData = yield promises_1.default.readFile(electricityDataFilePath, 'utf-8');
+            const documents = JSON.parse(jsonData);
+            console.log('Učitani podaci iz JSON fajla:', documents);
             averages = {};
             fields.forEach(field => {
                 const sum = documents.reduce((acc, obj) => acc + obj[field], 0);
@@ -63,22 +44,30 @@ app.get('/api/documents', (req, res) => __awaiter(void 0, void 0, void 0, functi
             sendToNATS('average_data', averages).catch(error => {
                 console.error('Došlo je do greške prilikom slanja poruke na NATS server:', error);
             });
-            res.json(averages);
         }
-        else {
-            console.error('startDate ili endDate su undefined.');
-            res.status(400).json({ error: 'startDate ili endDate su undefined.' });
+        catch (error) {
+            console.error('Došlo je do greške prilikom učitavanja podataka iz JSON fajla:', error);
         }
+    });
+}
+loadDataFromFile().catch(error => {
+    console.error('Došlo je do greške prilikom učitavanja podataka:', error);
+});
+const fields = ['Consumption', 'Production', 'Nuclear', 'Wind', 'Hydroelectric', 'Oil and Gas', 'Coal', 'Solar', 'Biomass'];
+app.use(express_1.default.static(staticPath));
+app.get('/api/documents', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        res.json(averages);
     }
     catch (error) {
-        console.error('Došlo je do greške prilikom filtriranja dokumenata:', error);
-        res.status(500).json({ error: 'Došlo je do greške prilikom filtriranja dokumenata.' });
+        console.error('Došlo je do greške prilikom obrade zahteva:', error);
+        res.status(500).json({ error: 'Došlo je do greške prilikom obrade zahteva.' });
     }
 }));
 function sendToNATS(topic, data) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const nc = yield (0, nats_1.connect)({ servers: 'nats://localhost:4222' });
+            const nc = yield (0, nats_1.connect)({ servers: 'nats://nats:4222' });
             const codec = (0, nats_1.JSONCodec)();
             const encodedData = codec.encode(data);
             nc.publish(topic, encodedData);
@@ -94,7 +83,7 @@ function sendToNATS(topic, data) {
 function subscribeToNATS(topic) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const nc = yield (0, nats_1.connect)({ servers: 'nats://localhost:4222' });
+            const nc = yield (0, nats_1.connect)({ servers: 'nats://nats:4222' });
             const subscription = nc.subscribe(topic);
             (() => __awaiter(this, void 0, void 0, function* () {
                 var _a, e_1, _b, _c;

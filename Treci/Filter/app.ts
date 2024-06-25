@@ -1,78 +1,62 @@
 import express, { Express, Request, Response } from 'express';
 import path from 'path';
-import { MongoClient, Db, Collection, MongoClientOptions } from 'mongodb';
+import fs from 'fs/promises'; 
 import { connect, JSONCodec } from 'nats';
-import { Msg, Subscription } from 'nats';
 
 const app: Express = express();
 
-const uri: string = 'mongodb://127.0.0.1:27017/Electricity';
-let collection: Collection;
+const staticPath: string = path.join(__dirname, 'public');
+const electricityDataFilePath: string = path.join(staticPath, 'Electricity.electricity_consumption.json');
+
 let averages: { [key: string]: number } = {};
 
-async function connectToDatabase() {
-    const options: MongoClientOptions = {};
+async function loadDataFromFile() {
+    try {
+        const jsonData = await fs.readFile(electricityDataFilePath, 'utf-8');
+        const documents = JSON.parse(jsonData);
 
-    const client: MongoClient = await MongoClient.connect(uri, options);
-    const db: Db = client.db('Electricity');
-    collection = db.collection('electricity_consumption');
-    console.log('Uspešno konektovan sa bazom.');
+        console.log('Učitani podaci iz JSON fajla:', documents);
+
+        averages = {};
+
+        fields.forEach(field => {
+            const sum = documents.reduce((acc: any, obj: { [x: string]: any; }) => acc + obj[field], 0);
+            averages[field] = sum / documents.length;
+        });
+
+        // Subscribe to NATS first
+        await subscribeToNATS('average_data');
+
+        // Now send the averages to NATS
+        sendToNATS('average_data', averages).catch(error => {
+            console.error('Došlo je do greške prilikom slanja poruke na NATS server:', error);
+        });
+
+    } catch (error) {
+        console.error('Došlo je do greške prilikom učitavanja podataka iz JSON fajla:', error);
+    }
 }
 
-connectToDatabase().catch(error => {
-    console.error('Došlo je do greške prilikom konektovanja sa bazom:', error);
+loadDataFromFile().catch(error => {
+    console.error('Došlo je do greške prilikom učitavanja podataka:', error);
 });
-
-const staticPath: string = path.join(__dirname, 'public');
-
-app.use(express.static(staticPath));
 
 const fields = ['Consumption', 'Production', 'Nuclear', 'Wind', 'Hydroelectric', 'Oil and Gas', 'Coal', 'Solar', 'Biomass'];
 
+app.use(express.static(staticPath));
+
 app.get('/api/documents', async (req: Request, res: Response) => {
     try {
-        const { startDate, endDate } = req.query;
-
-        if (typeof startDate === 'string' && typeof endDate === 'string') {
-            const startDateObj = new Date(startDate);
-            const endDateObj = new Date(endDate);
-
-            const documents = await collection.find({
-                DateTime: { $gte: startDateObj, $lte: endDateObj }
-            }).toArray();
-
-            console.log(documents)
-
-            averages = {};
-
-            fields.forEach(field => {
-                const sum = documents.reduce((acc, obj) => acc + obj[field], 0);
-                averages[field] = sum / documents.length;
-            });
-
-            // Subscribe to NATS first
-            await subscribeToNATS('average_data');
-
-            // Now send the averages to NATS
-            sendToNATS('average_data', averages).catch(error => {
-                console.error('Došlo je do greške prilikom slanja poruke na NATS server:', error);
-            });
-
-            res.json(averages);
-        } else {
-            console.error('startDate ili endDate su undefined.');
-            res.status(400).json({ error: 'startDate ili endDate su undefined.' });
-        }
+        res.json(averages);
     } catch (error) {
-        console.error('Došlo je do greške prilikom filtriranja dokumenata:', error);
-        res.status(500).json({ error: 'Došlo je do greške prilikom filtriranja dokumenata.' });
+        console.error('Došlo je do greške prilikom obrade zahteva:', error);
+        res.status(500).json({ error: 'Došlo je do greške prilikom obrade zahteva.' });
     }
 });
 
-
 async function sendToNATS(topic: string, data: any) {
     try {
-        const nc = await connect({ servers: 'nats://localhost:4222' });
+        const nc = await connect({ servers: 'nats://nats:4222' });
         const codec = JSONCodec();
         const encodedData = codec.encode(data);
 
@@ -89,7 +73,7 @@ async function sendToNATS(topic: string, data: any) {
 
 async function subscribeToNATS(topic: string) {
     try {
-        const nc = await connect({ servers: 'nats://localhost:4222' });
+        const nc = await connect({ servers: 'nats://nats:4222' });
         const subscription = nc.subscribe(topic);
         (async () => {
             for await (const msg of subscription) {
@@ -103,7 +87,6 @@ async function subscribeToNATS(topic: string) {
         console.error('Došlo je do greške prilikom pretplate na NATS subjekat:', error);
     }
 }
-
 
 const PORT: number = 3000;
 app.listen(PORT, () => {

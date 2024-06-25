@@ -1,8 +1,4 @@
-version: '3'
-
-networks:
-  filter-network:
-    driver: bridge
+version: "3"
 
 services:
   nodejs:
@@ -14,31 +10,60 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - filter-network
-    environment:
-      PORT: 3000  
-      MONGODB_URL: mongodb://mongodb:27017/Electricity
+      - my-network
     depends_on:
-      - mongodb
       - nats
-
-  mongodb:
-    image: mongo
-    container_name: mongodb
-    restart: unless-stopped
-    networks:
-      - filter-network
-    environment:
-      MONGO_INITDB_DATABASE: Electricity
-    volumes:
-      - mongodb_data:/data/db
 
   nats:
     image: nats
     container_name: nats
     restart: unless-stopped
     networks:
-      - filter-network
+      - my-network
 
-volumes:
-  mongodb_data:
+  python-app:
+    build: ./Dashboard
+    container_name: python-app
+    restart: unless-stopped
+    networks:
+      - my-network
+    depends_on:
+      - nats
+
+  nodejs-app2:
+    build:
+      context: ./Command
+    image: node-js-app2
+    container_name: node-js-app2
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - my-network
+    depends_on:
+      - my-custom-mosquitto
+
+  my-custom-mosquitto:  
+    image: my-custom-mosquitto  
+    container_name: my-custom-mosquitto 
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    networks:
+      - my-network
+
+  send:
+    build:
+      context: ./SendData
+    image: send-app
+    container_name: send-app
+    restart: unless-stopped
+    networks:
+      - my-network
+    depends_on:
+      - my-custom-mosquitto
+      - nodejs-app2  # Update dependency to use your custom service
+
+networks:
+  my-network:
+    external: true
